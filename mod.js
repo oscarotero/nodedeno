@@ -9,6 +9,7 @@ const __dirname = `const __dirname = (() => {
 
 const defaults = {
   ignoredFiles: [],
+  modules: {},
   onConvert(file, code) {
     return [file, code];
   },
@@ -17,38 +18,38 @@ const defaults = {
 export async function convert(options = {}) {
   options = { ...defaults, ...options };
 
+  options.ignoredFiles = new Set(options.ignoredFiles);
+  options.modules = new Map(Object.entries(options.modules));
+
   try {
     await Deno.remove(options.to, { recursive: true });
   } catch (err) {}
 
   await copy(options.from, options.to);
-  await convertDirectory(
-    options.to,
-    new Set(options.ignoredFiles),
-    options.onConvert,
-  );
+  await convertDirectory(options.to, options);
 
   if (options.depsFile) {
     await copy(options.depsFile, join(options.to, "deps.js"));
   }
 }
 
-export async function convertDirectory(src, ignored, onConvert) {
+export async function convertDirectory(src, options) {
   for await (const entry of Deno.readDir(src)) {
     let path = join(src, entry.name);
 
-    if (ignored.has(entry.name)) {
+    if (options.ignoredFiles.has(entry.name)) {
       await Deno.remove(path);
       continue;
     }
 
+    //Remove types
     if (path.endsWith(".d.ts")) {
       await Deno.remove(path);
       continue;
     }
 
     if (entry.isDirectory) {
-      await convertDirectory(path);
+      await convertDirectory(path, options);
       continue;
     }
 
@@ -67,7 +68,7 @@ export async function convertDirectory(src, ignored, onConvert) {
       path = path.replace(/\.ts$/, ".js");
     }
 
-    const [file, code] = onConvert(path, convertCode(text));
+    const [file, code] = options.onConvert(path, convertCode(text, options));
 
     await Deno.writeTextFile(file, code);
 
@@ -77,7 +78,7 @@ export async function convertDirectory(src, ignored, onConvert) {
   }
 }
 
-export function convertCode(code) {
+export function convertCode(code, options) {
   code = code
     //Remove "use strict" because ES5 modules are always strict
     .replace(/["']use strict['"]/, "")
@@ -100,12 +101,12 @@ export function convertCode(code) {
     //Fix current import
     .replace(
       /import\s+({[^}]+}|\S+)\s*from\s*['"]([^'"]+)['"]/g,
-      (str, name, path) => importFrom(name, path),
+      (str, name, path) => importFrom(name, path, options),
     )
     //Replace require()
     .replace(
       /(let|const|var)\s+({[^}]+}|\S+)\s*=\s*require\(['"]([^'"]+)['"]\)/g,
-      (str, prefix, name, path) => importFrom(name, path),
+      (str, prefix, name, path) => importFrom(name, path, options),
     )
     .trimStart();
 
@@ -121,12 +122,19 @@ export function convertCode(code) {
   return code;
 }
 
-function importFrom(name, path) {
+function importFrom(name, path, options) {
+  //Declared path
+  if (options.modules.has(path)) {
+    return `import ${name} from "${options.modules.get(path)}";`;
+  }
+
+  if (path.endsWith(".")) {
+    throw new Error(`Unresolved path ${path}`);
+  }
+
   //Relative import
   if (path.startsWith(".")) {
-    if (path.endsWith("..")) { // require("..");
-      path = join(path, "lib/mod.js");
-    } else if (!path.endsWith(".js")) {
+    if (!path.endsWith(".js")) {
       path = `${path}.js`;
     }
 

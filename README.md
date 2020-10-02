@@ -32,11 +32,6 @@ export const otherModule = function bar() {};
 ```js
 import { convert } from "https://raw.githubusercontent.com/oscarotero/nodedeno/main/mod.js"
 
-const fromDir = ;
-const toDir = "deno-library/lib";
-const depsFile = "deps.js";
-const ignore =
-
 convert({
   from: "node-library/lib",
   to: "deno-library/lib",
@@ -45,9 +40,21 @@ convert({
     "ignored-file-1.js",
     "ignored-file-2.js",
   ],
+  modules: {
+    "module-name": "./new-module.js"
+  },
   onConvert(file, code) {
-    // Here you can change the code or filename
+    // Here you can make additional changes to the code or filename
     return [file, code];
   }
 })
 ```
+
+## Options
+
+- `from` The directory of the source files
+- `to` The destination of the converted files
+- `depsFile` The file that exports the dependencies to be copied in the destination folder (and renamed to `deps.js`)
+- `ignoredFiles` An array of files that won't be copied
+- `onConvert` A callback that will be invoked for every file copied. It allows to make additional changes
+- `modules` An object to customize some modules resolution.
