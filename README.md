@@ -54,7 +54,11 @@ convert({
 
 - `from` The directory of the source files
 - `to` The destination of the converted files
-- `depsFile` The file that exports the dependencies to be copied in the destination folder (and renamed to `deps.js`)
+- `depsFile` The dependencies file that will be copied in the destination folder (and renamed to `deps.js`
 - `ignoredFiles` An array of files that won't be copied
 - `onConvert` A callback that will be invoked for every file copied. It allows to make additional changes
 - `modules` An object to customize some modules resolution.
+
+## Used in
+
+- [postcss-deno](https://github.com/oscarotero/postcss-deno)
