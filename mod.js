@@ -27,7 +27,10 @@ export async function convert(options = {}) {
     new Set(options.ignoredFiles),
     options.onConvert,
   );
-  await copy(deps_file, join(dest, "deps.js"));
+
+  if (options.depsFile) {
+    await copy(options.depsFile, join(options.to, "deps.js"));
+  }
 }
 
 export async function convertDirectory(src, ignored, onConvert) {
