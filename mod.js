@@ -4,6 +4,7 @@ import {
   extname,
   join,
   relative,
+  resolve,
 } from "https://deno.land/std/path/mod.ts";
 
 const __dirname = `const __dirname = (() => {
@@ -106,9 +107,14 @@ export function convertCode(file, code, options) {
 
       return `export const ${name} = ${postfix}`;
     })
+    //Fix current export
+    .replace(
+      /export\s+({[^}]+}|\S+)\s*from\s*['"]([^'"]+)['"]/g,
+      (str, name, path) => exportFrom(file, name, path, options),
+    )
     //Fix current import
     .replace(
-      /import\s+({[^}]+}|\S+)\s*from\s*['"]([^'"]+)['"]/g,
+      /import\s+(.*)\s*from\s*['"]([^'"]+)['"]/g,
       (str, name, path) => importFrom(file, name, path, options),
     )
     //Replace require()
@@ -131,7 +137,7 @@ export function convertCode(file, code, options) {
 }
 
 function importFrom(file, name, path, options) {
-  const mod = resolve(file, path, options);
+  const mod = resolvePath(file, path, options);
 
   //If it's a dependency force named import
   if (mod.endsWith("/deps.js") && !name.startsWith("{")) {
@@ -141,28 +147,53 @@ function importFrom(file, name, path, options) {
   return `import ${name} from "${mod}";`;
 }
 
-function resolve(file, path, options) {
-  const from = dirname(file);
+function exportFrom(file, name, path, options) {
+  const mod = resolvePath(file, path, options);
 
-  if (options.modules.has(path)) {
-    path = options.modules.get(path);
-  } else if (!path.startsWith(".")) {
-    path = "./deps.js";
+  //If it's a dependency force named import
+  if (mod.endsWith("/deps.js") && !name.startsWith("{")) {
+    name = `{ ${name} }`;
   }
 
-  const to = join(options.to, path);
-  let mod = to;
+  return `export ${name} from "${mod}";`;
+}
+
+function resolvePath(file, path, options) {
+  if (options.modules.has(path)) {
+    path = relative(dirname(file), join(options.to, options.modules.get(path)));
+  } else if (!path.startsWith(".")) {
+    path = relative(dirname(file), join(options.to, "./deps.js"));
+  }
+
+  let absolute = resolve(dirname(file), path);
 
   //Resolve modules
-  if (!extname(mod)) {
-    mod = `${to}.js`;
+  if (!extname(absolute)) {
+    let module = `${absolute}.js`;
 
-    if (!existsSync(mod)) {
-      mod = `${to}/index.js`;
+    if (!existsSync(module) && !options.transpile) {
+      module = `${absolute}.ts`;
     }
+    console.log(module);
+
+    if (!existsSync(module)) {
+      module = `${absolute}/index.js`;
+    }
+
+    if (!existsSync(module) && !options.transpile) {
+      module = `${absolute}/index.ts`;
+    }
+
+    if (!existsSync(module)) {
+      throw new Error(`Module ${absolute} not resolved`);
+    }
+
+    absolute = module;
   }
 
-  mod = relative(from, mod);
+  const relativeModule = relative(dirname(file), absolute);
 
-  return mod.startsWith(".") ? mod : `./${mod}`;
+  return relativeModule.startsWith(".")
+    ? relativeModule
+    : `./${relativeModule}`;
 }
