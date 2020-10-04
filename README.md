@@ -58,6 +58,7 @@ convert({
 - `ignoredFiles` An array of files that won't be copied
 - `onConvert` A callback that will be invoked for every file copied. It allows to make additional changes
 - `modules` An object to customize some modules resolution.
+- `transpile` Set `true` to convert TypeScript files to Javascript.
 
 ## Used in
 

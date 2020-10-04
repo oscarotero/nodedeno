@@ -1,5 +1,10 @@
-import { copy } from "https://deno.land/std/fs/mod.ts";
-import { join } from "https://deno.land/std/path/mod.ts";
+import { copy, existsSync } from "https://deno.land/std/fs/mod.ts";
+import {
+  dirname,
+  extname,
+  join,
+  relative,
+} from "https://deno.land/std/path/mod.ts";
 
 const __dirname = `const __dirname = (() => {
   const { url } = import.meta;
@@ -42,21 +47,21 @@ export async function convertDirectory(src, options) {
       continue;
     }
 
-    //Remove types
-    if (path.endsWith(".d.ts")) {
-      await Deno.remove(path);
+    if (entry.isDirectory) {
+      await convertDirectory(path, options);
       continue;
     }
 
-    if (entry.isDirectory) {
-      await convertDirectory(path, options);
+    //Remove types
+    if (path.endsWith(".d.ts") && options.transpile) {
+      await Deno.remove(path);
       continue;
     }
 
     let text = await Deno.readTextFile(path);
 
     //Transpile .ts => .js
-    if (path.endsWith(".ts")) {
+    if (path.endsWith(".ts") && options.transpile) {
       const result = await Deno.transpileOnly({
         [path]: text,
       });
@@ -68,7 +73,10 @@ export async function convertDirectory(src, options) {
       path = path.replace(/\.ts$/, ".js");
     }
 
-    const [file, code] = options.onConvert(path, convertCode(text, options));
+    const [file, code] = options.onConvert(
+      path,
+      convertCode(path, text, options),
+    );
 
     await Deno.writeTextFile(file, code);
 
@@ -78,7 +86,7 @@ export async function convertDirectory(src, options) {
   }
 }
 
-export function convertCode(code, options) {
+export function convertCode(file, code, options) {
   code = code
     //Remove "use strict" because ES5 modules are always strict
     .replace(/["']use strict['"]/, "")
@@ -101,12 +109,12 @@ export function convertCode(code, options) {
     //Fix current import
     .replace(
       /import\s+({[^}]+}|\S+)\s*from\s*['"]([^'"]+)['"]/g,
-      (str, name, path) => importFrom(name, path, options),
+      (str, name, path) => importFrom(file, name, path, options),
     )
     //Replace require()
     .replace(
       /(let|const|var)\s+({[^}]+}|\S+)\s*=\s*require\(['"]([^'"]+)['"]\)/g,
-      (str, prefix, name, path) => importFrom(name, path, options),
+      (str, prefix, name, path) => importFrom(file, name, path, options),
     )
     .trimStart();
 
@@ -122,29 +130,39 @@ export function convertCode(code, options) {
   return code;
 }
 
-function importFrom(name, path, options) {
-  //Declared path
+function importFrom(file, name, path, options) {
+  const mod = resolve(file, path, options);
+
+  //If it's a dependency force named import
+  if (mod.endsWith("/deps.js") && !name.startsWith("{")) {
+    name = `{ ${name} }`;
+  }
+
+  return `import ${name} from "${mod}";`;
+}
+
+function resolve(file, path, options) {
+  const from = dirname(file);
+
   if (options.modules.has(path)) {
-    return `import ${name} from "${options.modules.get(path)}";`;
+    path = options.modules.get(path);
+  } else if (!path.startsWith(".")) {
+    path = "./deps.js";
   }
 
-  if (path.endsWith(".")) {
-    throw new Error(`Unresolved path ${path}`);
-  }
+  const to = join(options.to, path);
+  let mod = to;
 
-  //Relative import
-  if (path.startsWith(".")) {
-    if (!path.endsWith(".js")) {
-      path = `${path}.js`;
+  //Resolve modules
+  if (!extname(mod)) {
+    mod = `${to}.js`;
+
+    if (!existsSync(mod)) {
+      mod = `${to}/index.js`;
     }
-
-    return `import ${name} from "${path}";`;
   }
 
-  //Import dependency
-  if (name.startsWith("{")) {
-    return `import ${name} from "./deps.js";`;
-  }
+  mod = relative(from, mod);
 
-  return `import { ${name} } from "./deps.js";`;
+  return mod.startsWith(".") ? mod : `./${mod}`;
 }
