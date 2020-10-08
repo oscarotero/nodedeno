@@ -6,6 +6,7 @@ import {
   relative,
   resolve,
 } from "https://deno.land/std/path/mod.ts";
+import { replaceModules } from "./src/moduleParser.js";
 
 const __dirname = `const __dirname = (() => {
   const { url } = import.meta;
@@ -88,40 +89,23 @@ export async function convertDirectory(src, options) {
 }
 
 export function convertCode(file, code, options) {
-  code = code
-    //Remove "use strict" because ES5 modules are always strict
+  code = replaceModules(code, (mod) => {
+    if (!mod.path) {
+      return mod;
+    }
+
+    mod.path = resolvePath(file, mod.path, options);
+
+    //If it's a dependency force named import
+    const names = Array.isArray(mod.import) ? mod.import : mod.export;
+
+    if (mod.path.endsWith("/deps.js") && !Array.isArray(names[0])) {
+      names[0] = [names[0]];
+    }
+
+    return mod;
+  })
     .replace(/["']use strict['"]/, "")
-    //Replace default module.exports
-    .replace(/module\.exports\s*=\s*\S/g, (str) => {
-      const postfix = str.slice(-1);
-
-      if (postfix === "{") {
-        return `export ${postfix}`;
-      }
-
-      return `export default ${postfix}`;
-    })
-    //Replace named module.exports
-    .replace(/module\.exports\.(\w+)\s*=\s*\S/g, (str, name) => {
-      const postfix = str.slice(-1);
-
-      return `export const ${name} = ${postfix}`;
-    })
-    //Fix current export
-    .replace(
-      /export\s+({[^}]+}|\S+)\s*from\s*['"]([^'"]+)['"]/g,
-      (str, name, path) => exportFrom(file, name, path, options),
-    )
-    //Fix current import
-    .replace(
-      /import\s+(.*)\s*from\s*['"]([^'"]+)['"]/g,
-      (str, name, path) => importFrom(file, name, path, options),
-    )
-    //Replace require()
-    .replace(
-      /(let|const|var)\s+({[^}]+}|\S+)\s*=\s*require\(['"]([^'"]+)['"]\)/g,
-      (str, prefix, name, path) => importFrom(file, name, path, options),
-    )
     .trimStart();
 
   //Replace node global objects by Deno equivalents
@@ -134,28 +118,6 @@ export function convertCode(file, code, options) {
   code = code.replace(/process\.env\./g, "Deno.env.");
 
   return code;
-}
-
-function importFrom(file, name, path, options) {
-  const mod = resolvePath(file, path, options);
-
-  //If it's a dependency force named import
-  if (mod.endsWith("/deps.js") && !name.startsWith("{")) {
-    name = `{ ${name} }`;
-  }
-
-  return `import ${name} from "${mod}";`;
-}
-
-function exportFrom(file, name, path, options) {
-  const mod = resolvePath(file, path, options);
-
-  //If it's a dependency force named import
-  if (mod.endsWith("/deps.js") && !name.startsWith("{")) {
-    name = `{ ${name} }`;
-  }
-
-  return `export ${name} from "${mod}";`;
 }
 
 function resolvePath(file, path, options) {
@@ -174,7 +136,6 @@ function resolvePath(file, path, options) {
     if (!existsSync(module) && !options.transpile) {
       module = `${absolute}.ts`;
     }
-    console.log(module);
 
     if (!existsSync(module)) {
       module = `${absolute}/index.js`;

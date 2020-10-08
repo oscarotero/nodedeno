@@ -1,11 +1,11 @@
 import { assertEquals } from "https://deno.land/std/testing/asserts.ts";
-import { parseImportESM } from "../src/moduleParser.js";
+import { parseESM } from "../src/moduleParser.js";
 
 Deno.test("import defaultExport", () => {
   assertEquals(
-    parseImportESM(`import defaultExport from "./module-file.js";`),
+    parseESM(`import defaultExport from "./module-file.js";`),
     {
-      imports: [
+      import: [
         {
           name: "defaultExport",
         },
@@ -17,9 +17,9 @@ Deno.test("import defaultExport", () => {
 
 Deno.test("import * as name", () => {
   assertEquals(
-    parseImportESM(`import * as name from "./module-file.js";`),
+    parseESM(`import * as name from "./module-file.js";`),
     {
-      imports: [
+      import: [
         {
           name: "*",
           as: "name",
@@ -32,9 +32,9 @@ Deno.test("import * as name", () => {
 
 Deno.test("import { export1 }", () => {
   assertEquals(
-    parseImportESM(`import { export1 } from "./module-file.js";`),
+    parseESM(`import {\nexport1\n} from "./module-file.js";`),
     {
-      imports: [
+      import: [
         [
           {
             name: "export1",
@@ -48,9 +48,9 @@ Deno.test("import { export1 }", () => {
 
 Deno.test("import { export1 as alias1 }", () => {
   assertEquals(
-    parseImportESM(`import { export1 as alias1 } from "./module-file.js";`),
+    parseESM(`import { export1 as alias1 } from "./module-file.js";`),
     {
-      imports: [
+      import: [
         [
           {
             name: "export1",
@@ -65,9 +65,9 @@ Deno.test("import { export1 as alias1 }", () => {
 
 Deno.test("import { export1, export2 }", () => {
   assertEquals(
-    parseImportESM(`import { export1, export2 } from "./module-file.js";`),
+    parseESM(`import { export1, export2 } from "./module-file.js";`),
     {
-      imports: [
+      import: [
         [
           {
             name: "export1",
@@ -84,11 +84,11 @@ Deno.test("import { export1, export2 }", () => {
 
 Deno.test("import { export1, export2 as alias2 }", () => {
   assertEquals(
-    parseImportESM(
+    parseESM(
       `import { export1, export2 as alias2 } from "./module-file.js";`,
     ),
     {
-      imports: [
+      import: [
         [
           {
             name: "export1",
@@ -106,8 +106,9 @@ Deno.test("import { export1, export2 as alias2 }", () => {
 
 Deno.test("import 'path'", () => {
   assertEquals(
-    parseImportESM(`import "./module-file.js";`),
+    parseESM(`import "./module-file.js";`),
     {
+      import: [],
       path: "./module-file.js",
     },
   );
@@ -115,11 +116,11 @@ Deno.test("import 'path'", () => {
 
 Deno.test("import defaultExport, { export1 }", () => {
   assertEquals(
-    parseImportESM(
+    parseESM(
       `import defaultExport, { export1 } from "./module-file.js";`,
     ),
     {
-      imports: [
+      import: [
         {
           name: "defaultExport",
         },
@@ -136,11 +137,11 @@ Deno.test("import defaultExport, { export1 }", () => {
 
 Deno.test("import defaultExport, * as name", () => {
   assertEquals(
-    parseImportESM(
+    parseESM(
       `import defaultExport, * as name from "./module-file.js";`,
     ),
     {
-      imports: [
+      import: [
         {
           name: "defaultExport",
         },
@@ -148,6 +149,101 @@ Deno.test("import defaultExport, * as name", () => {
           name: "*",
           as: "name",
         },
+      ],
+      path: "./module-file.js",
+    },
+  );
+});
+
+Deno.test("export *", () => {
+  assertEquals(
+    parseESM(
+      `export * from "./module-file.js";`,
+    ),
+    {
+      export: [
+        {
+          name: "*",
+        },
+      ],
+      path: "./module-file.js",
+    },
+  );
+});
+
+Deno.test("export * as name1", () => {
+  assertEquals(
+    parseESM(
+      `export * as name1 from "./module-file.js";`,
+    ),
+    {
+      export: [
+        {
+          name: "*",
+          as: "name1",
+        },
+      ],
+      path: "./module-file.js",
+    },
+  );
+});
+
+Deno.test("export { name1, name2 }", () => {
+  assertEquals(
+    parseESM(
+      `export { name1, name2 } from "./module-file.js";`,
+    ),
+    {
+      export: [
+        [
+          {
+            name: "name1",
+          },
+          {
+            name: "name2",
+          },
+        ],
+      ],
+      path: "./module-file.js",
+    },
+  );
+});
+
+Deno.test("export { name1 as alias1, name2 as alias2 }", () => {
+  assertEquals(
+    parseESM(
+      `export { name1 as alias1, name2 as alias2 } from "./module-file.js";`,
+    ),
+    {
+      export: [
+        [
+          {
+            name: "name1",
+            as: "alias1",
+          },
+          {
+            name: "name2",
+            as: "alias2",
+          },
+        ],
+      ],
+      path: "./module-file.js",
+    },
+  );
+});
+
+Deno.test("export { default }", () => {
+  assertEquals(
+    parseESM(
+      `export { default } from "./module-file.js";`,
+    ),
+    {
+      export: [
+        [
+          {
+            name: "default",
+          },
+        ],
       ],
       path: "./module-file.js",
     },
