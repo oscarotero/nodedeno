@@ -101,10 +101,10 @@ export function stringify(mod) {
     if (mod.import.length) {
       code.push(stringifyNamedCollection(mod.import));
     }
+  }
 
-    if (mod.path) {
-      code.push(`from "${mod.path}"`);
-    }
+  if (mod.path) {
+    code.push(`from "${mod.path}"`);
   }
 
   return code.join(" ");
