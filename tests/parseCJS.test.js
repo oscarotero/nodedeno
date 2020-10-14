@@ -93,3 +93,17 @@ Deno.test("const { name1, name2: alias } = require('module-name');", () => {
     },
   );
 });
+
+Deno.test(`name1 = require("module-name");`, () => {
+  assertEquals(
+    parseImportCJS(`name1 = require("module-name");`),
+    {
+      import: [
+        {
+          name: "name1",
+        },
+      ],
+      path: "module-name",
+    },
+  );
+});

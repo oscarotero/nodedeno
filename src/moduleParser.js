@@ -51,9 +51,10 @@ export function parseExportCJS(code) {
 
 export function parseImportCJS(code) {
   const matches =
-    /((let|const|var)\s+({[^}]+}|\S+)\s*=\s*)?require\(['"]([^'"]+)['"]\)/.exec(
-      code,
-    );
+    /((let|const|var)?\s*({[^}]+}|\S+)\s*=\s*)?require\(['"]([^'"]+)['"]\)/
+      .exec(
+        code,
+      );
 
   if (!matches) {
     return;
