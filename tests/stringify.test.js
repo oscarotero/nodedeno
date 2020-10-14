@@ -7,3 +7,10 @@ Deno.test(`export * from "./filename.js";`, () => {
 
   assertEquals(stringify(parsed), expected);
 });
+
+Deno.test(`import "./filename.js"`, () => {
+  const parsed = parseESM(`import "./filename.js"`);
+  const expected = `import "./filename.js"`;
+
+  assertEquals(stringify(parsed), expected);
+});

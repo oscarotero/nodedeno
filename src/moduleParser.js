@@ -104,7 +104,11 @@ export function stringify(mod) {
   }
 
   if (mod.path) {
-    code.push(`from "${mod.path}"`);
+    if (mod.import && !mod.import.length) {
+      code.push(`"${mod.path}"`);
+    } else {
+      code.push(`from "${mod.path}"`);
+    }
   }
 
   return code.join(" ");
