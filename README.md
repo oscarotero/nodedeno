@@ -30,7 +30,7 @@ export const otherModule = function bar() {};
 ## Usage:
 
 ```js
-import { convert } from "https://raw.githubusercontent.com/oscarotero/nodedeno/main/mod.js"
+import { convert } from "https://deno.land/x/nodedeno/mod.js"
 
 convert({
   from: "node-library/lib",
