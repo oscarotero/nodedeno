@@ -20,7 +20,7 @@ module.exports.otherModule = function bar() {};
 Is converted to:
 
 ```js
-import dep from "./deps.js";
+import { dep } from "./deps.js";
 import otherModule from "./other-module.js";
 
 export default function foo() {};
