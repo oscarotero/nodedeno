@@ -62,4 +62,4 @@ convert({
 
 ## Used in
 
-- [postcss-deno](https://github.com/oscarotero/postcss-deno)
+- [postcss-deno](https://github.com/postcss/postcss-deno)
