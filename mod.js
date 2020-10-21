@@ -76,7 +76,10 @@ export async function convertDirectory(src, options) {
     }
 
     //Reference types
-    if (path.endsWith(".js") && existsSync(path.replace(/\.js$/, ".d.ts"))) {
+    if (
+      path.endsWith(".js") && existsSync(path.replace(/\.js$/, ".d.ts")) &&
+      !options.transpile
+    ) {
       const types = entry.name.replace(/\.js$/, ".d.ts");
       text = `/// <reference types="./${types}" />\n ${text}`;
     }
