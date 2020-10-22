@@ -14,6 +14,8 @@ const __dirname = `const __dirname = (() => {
   return (u.protocol === "file:" ? u.pathname : url).replace(/[/][^/]*$/, '');
 })();`;
 
+const validExtensions = [".js", ".ts", ".mjs"];
+
 const defaults = {
   ignoredFiles: [],
   modules: {},
@@ -51,6 +53,10 @@ export async function convertDirectory(src, options) {
 
     if (entry.isDirectory) {
       await convertDirectory(path, options);
+      continue;
+    }
+
+    if (!validExtensions.includes(extname(path))) {
       continue;
     }
 
@@ -98,6 +104,7 @@ export async function convertDirectory(src, options) {
 }
 
 export function convertCode(file, code, options) {
+  console.log(`Converting: ${file}`);
   code = replaceModules(code, (mod) => {
     if (!mod.path) {
       return mod;
@@ -155,7 +162,9 @@ function resolvePath(file, path, options) {
     }
 
     if (!existsSync(module)) {
-      throw new Error(`Module ${absolute} not resolved`);
+      throw new Error(
+        `Module ${absolute} (${path}) not resolved in the file ${file}`,
+      );
     }
 
     absolute = module;

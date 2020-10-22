@@ -1,12 +1,12 @@
 export function replaceModules(code, callback) {
   return code
     .replace(
-      /module\.exports\W.*/g,
-      (str) => replaceParsed(str, parseExportCJS(str), callback),
+      /(^|\s)module\.exports\W.*/g,
+      (str, start) => start + replaceParsed(str, parseExportCJS(str), callback),
     )
     .replace(
-      /(export|import)\s+.*\s*from\s*.*/g,
-      (str) => replaceParsed(str, parseESM(str), callback),
+      /(^|\s)(export|import)\s+.*\s*from\s*.*/g,
+      (str, start) => start + replaceParsed(str, parseESM(str), callback),
     )
     .replace(
       /.*\s*require\(.*/g,
