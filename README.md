@@ -64,16 +64,111 @@ convert({
 
 ## Options
 
-- `src` The root directory of the node package
-- `input` An array with directories and files to convert
-- `output` The destination of the converted files
-- `depsFiles` An array of deps module files that should be used for dependencies
-- `transpile` Set `true` to convert TypeScript files to Javascript and reference types.
-- `modules` An object to customize some modules resolution.
-- `copy` Object with files to copy without transform
-- `ignoredFiles` An array of files to ignore
-- `beforeConvert` A callback that will be invoked before convert the files.
-- `afterConvert` A callback that will be invoked after convert the files.
+### src
+
+The source directory of the node package
+
+### input
+
+An array with files and directories to load from the node package.
+
+```js
+{
+  src: "my-node-package",
+  input: [
+    "lib",
+    "index.js"
+  ]
+}
+```
+
+### output
+
+The folder destination of the Deno files
+
+### depsFiles
+
+By default, all external dependencies will be replaced by `deps.js` module. For example:
+
+```js
+const path = require("path");
+```
+
+will be converted to:
+
+```js
+import { path } from "./deps.js";
+```
+
+Use this option to customize the dependencies file, for example:
+
+```js
+{
+  depsFiles: {
+    "": "deps.js",
+    "subdirectory": "subdirectory/deps.js"
+  }
+}
+```
+
+### modules
+
+This option allows to customize some modules resolution. Useful if you want to provide a different file for some modules instead using `deps.js`.
+
+```js
+{
+  modules: {
+    "path": "https://deno.land/std/path/mod.ts"
+  }
+}
+```
+
+### copy
+
+To copy files to the output without transform it. The object keys are the source files (relative to cwd) and the value is the destination (relative to `output`):
+
+```js
+{
+  copy: {
+    "my-dependencies.js": "deps.js"
+  }
+}
+```
+
+### transpile
+
+Set `true` to converts all `.ts` code to `.js` and remove the reference types (`.d.ts`). This is useful if the typescript version fails in Deno.
+
+### ignoredFiles
+
+An array of files that must be ignored (relative to the `src` folder)
+
+### beforeConvert
+
+A callback that will be invoked before the file conversion. This is useful to perform some manual changes and substitutions. The first argument is a `Map` with all files that are going to be converted:
+
+```js
+{
+  beforeConvert(files) {
+    for (let [path, code] of files) {
+      code = code.replace("foo", "bar");
+      
+      //To rename a file, just remove and add again with different key
+      if (path === "my-file.js") {
+        files.remove(path);
+        path = "renamed-file.js";
+      }
+
+      //Save the changes again in the Map.
+      files.set(path, code);
+    }
+  }
+}
+```
+
+### afterConvert
+
+It's the same than `beforeConvert` but executed after the conversion.
 
 ## Used in
 
