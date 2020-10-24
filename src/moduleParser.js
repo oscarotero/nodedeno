@@ -44,6 +44,26 @@ export function parseExportCJS(code) {
 
   const [, , , name, value] = matches;
 
+  // exports.name = require("module-name");
+  const mod = parseImportCJS(value);
+
+  if (mod) {
+    // exports.name1 = require("module-name").name2;
+    if (Array.isArray(mod.import[0])) {
+      if (mod.import[0][0]) {
+        const importName = mod.import[0][0].name;
+
+        if (importName !== name) {
+          return { export: [[{ name: importName, as: name }]], path: mod.path };
+        } else if (name) {
+          return { export: [[{ name }]], path: mod.path };
+        }
+      }
+    }
+
+    return { export: [{ name: "*", as: name }], path: mod.path };
+  }
+
   if (!name) {
     return { export: [], value };
   }
@@ -66,10 +86,10 @@ export function parseImportCJS(code) {
 
   if (originalName) {
     // name = require("module-name").name
-    if (names === originalName) {
+    if (names === originalName || !names) {
       return {
         path,
-        import: [[{ name: names }]],
+        import: [[{ name: originalName }]],
       };
     }
 

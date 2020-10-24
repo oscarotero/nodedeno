@@ -184,7 +184,7 @@ function resolveModule(mod, directory, file, options) {
     }
   }
 
-  const id = path.replace(/^[\.\/]+/, "");
+  const id = trimLeft(path);
   if (options.modules.has(id)) {
     path = options.modules.get(id);
   }
@@ -217,8 +217,12 @@ function getDepsFile(deps, dir, fallback = "deps.js") {
   }
 
   while (dir && !deps.has(dir)) {
-    dir = dirname(dir);
+    dir = trimLeft(dirname(dir));
   }
 
   return deps.get(dir) || fallback;
+}
+
+function trimLeft(path) {
+  return path.replace(/^[\s\.\/]+/, "");
 }

@@ -59,3 +59,11 @@ Deno.test("exports.name1 = function name2(arg) {", () => {
 
   assertEquals(stringify(parsed), expected);
 });
+Deno.test("exports.name1 = require('module-name');", () => {
+  const parsed = parseExportCJS(
+    `exports.name1 = require('module-name');`,
+  );
+  const expected = `export * as name1 from "module-name"`;
+
+  assertEquals(stringify(parsed), expected);
+});
