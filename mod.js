@@ -1,10 +1,10 @@
-import { copy, existsSync } from "https://deno.land/std/fs/mod.ts";
+import { copy, ensureDir } from "https://deno.land/std/fs/mod.ts";
 import {
+  basename,
   dirname,
   extname,
   join,
   relative,
-  resolve,
 } from "https://deno.land/std/path/mod.ts";
 import { replaceModules } from "./src/moduleParser.js";
 
@@ -16,43 +16,56 @@ const __dirname = `const __dirname = (() => {
 
 const validExtensions = [".js", ".ts", ".mjs"];
 
-const defaults = {
-  ignoredFiles: [],
-  modules: {},
-  onConvert(file, code) {
-    return [file, code];
-  },
-};
-
 export async function convert(options = {}) {
-  options = { ...defaults, ...options };
+  options.ignoredFiles = new Set(options.ignoredFiles || []);
+  options.modules = new Map(Object.entries(options.modules || {}));
+  options.depsFiles = new Map(Object.entries(options.depsFiles || {}));
 
-  options.ignoredFiles = new Set(options.ignoredFiles);
-  options.modules = new Map(Object.entries(options.modules));
+  if (!Array.isArray(options.input)) {
+    options.input = [options.input];
+  }
 
-  try {
-    await Deno.remove(options.to, { recursive: true });
-  } catch (err) {}
+  //Read all src files
+  const directory = new Map();
 
-  await copy(options.from, options.to);
-  await convertDirectory(options.to, options);
+  options.input.forEach((path) => {
+    if (typeof path === "object") {
+      for (const [from, to] of Object.entries(path)) {
+        directory.set(to, Deno.readTextFileSync(join(options.src, from)));
+      }
+    } else if (extname(path)) {
+      directory.set(path, Deno.readTextFileSync(join(options.src, path)));
+    } else {
+      readDirectory(path, options, directory);
+    }
+  });
 
-  if (options.depsFile) {
-    await copy(options.depsFile, join(options.to, "deps.js"));
+  //Convert the code
+  await convertFiles(directory, options);
+
+  //Save files
+  for (const [file, code] of directory) {
+    const path = join(options.output, file);
+    await ensureDir(dirname(path));
+    await Deno.writeTextFile(path, code);
+  }
+
+  if (options.copy) {
+    for (const [from, to] of Object.entries(options.copy)) {
+      const dest = join(options.output, to);
+      await ensureDir(dirname(dest));
+      await copy(from, dest);
+    }
   }
 }
 
-export async function convertDirectory(src, options) {
-  for await (const entry of Deno.readDir(src)) {
-    let path = join(src, entry.name);
+function readDirectory(src, options, directory) {
+  const fullPath = join(options.src, src);
 
-    if (options.ignoredFiles.has(entry.name)) {
-      await Deno.remove(path);
-      continue;
-    }
+  for (const entry of Deno.readDirSync(fullPath)) {
+    const path = join(src, entry.name);
 
-    if (entry.isDirectory) {
-      await convertDirectory(path, options);
+    if (options.ignoredFiles.has(path)) {
       continue;
     }
 
@@ -60,119 +73,152 @@ export async function convertDirectory(src, options) {
       continue;
     }
 
-    //Remove types
-    if (path.endsWith(".d.ts") && options.transpile) {
-      await Deno.remove(path);
+    if (entry.isDirectory) {
+      readDirectory(path, options, directory);
       continue;
     }
 
-    let text = await Deno.readTextFile(path);
+    directory.set(path, Deno.readTextFileSync(join(options.src, path)));
+  }
+
+  return directory;
+}
+
+export async function convertFiles(directory, options) {
+  for (let [file, code] of directory) {
+    //Remove types
+    if (file.endsWith(".d.ts") && options.transpile) {
+      directory.delete(file);
+      continue;
+    }
+
+    //Remove empty file
+    if (!code.trim()) {
+      directory.delete(file);
+      continue;
+    }
 
     //Transpile .ts => .js
-    if (path.endsWith(".ts") && options.transpile) {
+    if (file.endsWith(".ts") && options.transpile) {
       const result = await Deno.transpileOnly({
-        [path]: text,
+        [file]: code,
       });
 
-      await Deno.remove(path);
-      text = result[path].source;
-      text = text.replaceAll("// @ts-expect-error", "");
-      text = text.replace(/\/\/\# sourceMappingURL=.*/, "");
-      path = path.replace(/\.ts$/, ".js");
+      directory.delete(file);
+
+      code = result[file].source;
+      code = code.replaceAll("// @ts-expect-error", "");
+      code = code.replace(/\/\/\# sourceMappingURL=.*/, "");
+      file = file.replace(/\.ts$/, ".js");
+      directory.set(file, code);
     }
 
     //Reference types
+    const refTypes = file.replace(/\.js$/, ".d.ts");
     if (
-      path.endsWith(".js") && existsSync(path.replace(/\.js$/, ".d.ts")) &&
+      file.endsWith(".js") &&
+      directory.has(refTypes) &&
       !options.transpile
     ) {
-      const types = entry.name.replace(/\.js$/, ".d.ts");
-      text = `/// <reference types="./${types}" />\n ${text}`;
+      code = `/// <reference types="./${
+        basename(file, ".js")
+      }.d.ts" />\n ${code}`;
     }
+  }
 
-    const [file, code] = options.onConvert(
-      path,
-      convertCode(path, text, options),
-    );
+  //Convert code
+  if (options.beforeConvert) {
+    options.beforeConvert(directory);
+  }
 
-    await Deno.writeTextFile(file, code);
+  for (const file of directory.keys()) {
+    directory.set(file, convertCode(directory, file, options));
+  }
 
-    if (file !== path) {
-      await Deno.remove(path);
-    }
+  if (options.afterConvert) {
+    options.afterConvert(directory);
   }
 }
 
-export function convertCode(file, code, options) {
+export function convertCode(directory, file, options) {
+  let code = directory.get(file);
+
   console.log(`Converting: ${file}`);
-  code = replaceModules(code, (mod) => {
-    if (!mod.path) {
-      return mod;
-    }
-
-    mod.path = resolvePath(file, mod.path, options);
-
-    //If it's a dependency force named import
-    const names = Array.isArray(mod.import) ? mod.import : mod.export;
-
-    if (mod.path.endsWith("/deps.js") && !Array.isArray(names[0])) {
-      names[0] = [names[0]];
-    }
-
-    return mod;
-  })
-    .replace(/["']use strict['"]/, "")
-    .trimStart();
 
   //Replace node global objects by Deno equivalents
   if (code.includes("Buffer.")) {
-    code = `import { Buffer } from "./deps.js";\n${code}`;
+    code = `import { Buffer } from "Buffer";\n${code}`;
   }
+
   if (code.includes("__dirname")) {
-    code = `${__dirname}\n${code}`;
+    code = `${__dirname}\n\n${code}`;
   }
+
   code = code.replace(/process\.env\./g, "Deno.env.");
+
+  //Convert modules
+  code = replaceModules(
+    code,
+    (mod) => mod.path ? resolveModule(mod, directory, file, options) : mod,
+  )
+    .replace(/["']use strict['"];?/, "")
+    .trimStart();
 
   return code;
 }
 
-function resolvePath(file, path, options) {
-  if (options.modules.has(path)) {
-    path = relative(dirname(file), join(options.to, options.modules.get(path)));
-  } else if (!path.startsWith(".")) {
-    path = relative(dirname(file), join(options.to, "./deps.js"));
+function resolveModule(mod, directory, file, options) {
+  let path = mod.path;
+  const basedir = dirname(file);
+
+  if (path.startsWith(".")) {
+    path = join(basedir, path);
+  } else {
+    path = getDepsFile(options.depsFiles, basedir);
+
+    //If it's a dependency force named import
+    const names = Array.isArray(mod.import) ? mod.import : mod.export;
+
+    if (!Array.isArray(names[0])) {
+      names[0] = [names[0]];
+    }
   }
 
-  let absolute = resolve(dirname(file), path);
+  const id = path.replace(/^[\.\/]+/, "");
+  if (options.modules.has(id)) {
+    path = options.modules.get(id);
+  }
 
   //Resolve modules
-  if (!extname(absolute)) {
-    let module = `${absolute}.js`;
-
-    if (!existsSync(module) && !options.transpile) {
-      module = `${absolute}.ts`;
-    }
-
-    if (!existsSync(module)) {
-      module = `${absolute}/index.js`;
-    }
-
-    if (!existsSync(module) && !options.transpile) {
-      module = `${absolute}/index.ts`;
-    }
-
-    if (!existsSync(module)) {
+  if (!extname(path)) {
+    if (directory.has(`${path}.js`)) {
+      path = `${path}.js`;
+    } else if (directory.has(`${path}.ts`)) {
+      path = `${path}.ts`;
+    } else if (directory.has(`${path}/index.js`)) {
+      path = `${path}/index.js`;
+    } else if (directory.has(`${path}/index.ts`)) {
+      path = `${path}/index.ts`;
+    } else {
       throw new Error(
-        `Module ${absolute} (${path}) not resolved in the file ${file}`,
+        `Module ${path} cannot be resolved from the file ${file}`,
       );
     }
-
-    absolute = module;
   }
 
-  const relativeModule = relative(dirname(file), absolute);
+  path = relative(basedir, path);
 
-  return relativeModule.startsWith(".")
-    ? relativeModule
-    : `./${relativeModule}`;
+  mod.path = path.startsWith(".") ? path : `./${path}`;
+}
+
+function getDepsFile(deps, dir, fallback = "deps.js") {
+  if (!deps) {
+    return fallback;
+  }
+
+  while (dir && !deps.has(dir)) {
+    dir = dirname(dir);
+  }
+
+  return deps.get(dir) || fallback;
 }

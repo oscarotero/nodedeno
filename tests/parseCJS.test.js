@@ -108,6 +108,35 @@ Deno.test(`name1 = require("module-name");`, () => {
   );
 });
 
+Deno.test(`name1 = require("module-name").name1`, () => {
+  assertEquals(
+    parseImportCJS(`name1 = require("module-name").name1;`),
+    {
+      import: [
+        [{
+          name: "name1",
+        }],
+      ],
+      path: "module-name",
+    },
+  );
+});
+
+Deno.test(`alias1 = require("module-name").name1`, () => {
+  assertEquals(
+    parseImportCJS(`alias1 = require("module-name").name1;`),
+    {
+      import: [
+        [{
+          name: "name1",
+          as: "alias1",
+        }],
+      ],
+      path: "module-name",
+    },
+  );
+});
+
 Deno.test(`exports.name1 = function name2() {`, () => {
   assertEquals(
     parseExportCJS(`exports.name1 = function name2() {`),

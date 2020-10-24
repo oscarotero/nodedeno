@@ -33,9 +33,15 @@ export const otherModule = function bar() {};
 import { convert } from "https://deno.land/x/nodedeno/mod.js"
 
 convert({
-  from: "node-library/lib",
-  to: "deno-library/lib",
-  depsFile: "deps.js",
+  src: "node-library",
+  input: [ "lib" ]
+  output: "deno-library",
+  depsFiles: {
+    "lib": "lib/deps.js"
+  },
+  copy: {
+    "my-deps-file.js": "lib/deps.js"
+  },
   ignoredFiles: [
     "ignored-file-1.js",
     "ignored-file-2.js",
@@ -43,22 +49,31 @@ convert({
   modules: {
     "module-name": "./new-module.js"
   },
-  onConvert(file, code) {
-    // Here you can make additional changes to the code or filename
-    return [file, code];
+  beforeConvert(src) {
+    for (let [path, code] of src) {
+      //path and code of all files
+    }
+  }
+  afterConvert(src) {
+    for (let [path, code] of src) {
+      //path and code of all files
+    }
   }
 })
 ```
 
 ## Options
 
-- `from` The directory of the source files
-- `to` The destination of the converted files
-- `depsFile` The dependencies file that will be copied in the destination folder (and renamed to `deps.js`
-- `ignoredFiles` An array of files that won't be copied
-- `onConvert` A callback that will be invoked for every file copied. It allows to make additional changes
+- `src` The root directory of the node package
+- `input` An array with directories and files to convert
+- `output` The destination of the converted files
+- `depsFiles` An array of deps module files that should be used for dependencies
+- `transpile` Set `true` to convert TypeScript files to Javascript and reference types.
 - `modules` An object to customize some modules resolution.
-- `transpile` Set `true` to convert TypeScript files to Javascript.
+- `copy` Object with files to copy without transform
+- `ignoredFiles` An array of files to ignore
+- `beforeConvert` A callback that will be invoked before convert the files.
+- `afterConvert` A callback that will be invoked after convert the files.
 
 ## Used in
 

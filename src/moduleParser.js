@@ -53,7 +53,7 @@ export function parseExportCJS(code) {
 
 export function parseImportCJS(code) {
   const matches =
-    /((let|const|var)?\s*({[^}]+}|\S+)\s*=\s*)?require\(['"]([^'"]+)['"]\)/
+    /((let|const|var)?\s*({[^}]+}|\S+)\s*=\s*)?require\(['"]([^'"]+)['"]\)(\.(\w+))?/
       .exec(
         code,
       );
@@ -62,7 +62,28 @@ export function parseImportCJS(code) {
     return;
   }
 
-  const [, , , names, path] = matches;
+  const [, , , names, path, , originalName] = matches;
+
+  if (originalName) {
+    // name = require("module-name").name
+    if (names === originalName) {
+      return {
+        path,
+        import: [[{ name: names }]],
+      };
+    }
+
+    // alias = require("module-name").name
+    return {
+      path,
+      import: [[
+        {
+          name: originalName,
+          as: names,
+        },
+      ]],
+    };
+  }
 
   return {
     path,
