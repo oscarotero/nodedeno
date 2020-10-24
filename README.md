@@ -32,7 +32,7 @@ export const otherModule = function bar() {};
 ```js
 import { convert } from "https://deno.land/x/nodedeno/mod.js"
 
-convert({
+await convert({
   src: "node-library",
   input: [ "lib" ]
   output: "deno-library",
@@ -74,7 +74,6 @@ An array with files and directories to load from the node package.
 
 ```js
 {
-  src: "my-node-package",
   input: [
     "lib",
     "index.js"
