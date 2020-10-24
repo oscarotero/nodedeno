@@ -51,3 +51,11 @@ Deno.test("const { name1, name2: alias } = require('module-name');", () => {
 
   assertEquals(stringify(parsed), expected);
 });
+Deno.test("exports.name1 = function name2(arg) {", () => {
+  const parsed = parseExportCJS(
+    `exports.name1 = function name2(arg) {`,
+  );
+  const expected = `export function name1 (arg) {`;
+
+  assertEquals(stringify(parsed), expected);
+});

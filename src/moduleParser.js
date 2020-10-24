@@ -1,7 +1,9 @@
+import { red } from "https://deno.land/std/fmt/colors.ts";
+
 export function replaceModules(code, callback) {
   return code
     .replace(
-      /(^|\s)module\.exports\W.*/g,
+      /(^|\s)(module\.)?exports\W.*/g,
       (str, start) => start + replaceParsed(str, parseExportCJS(str), callback),
     )
     .replace(
@@ -77,8 +79,8 @@ export function stringify(mod) {
     if (mod.export.length === 1 && mod.value) {
       if (mod.value.match(/(function\W|class\W)/)) {
         mod.value = mod.value.replace(
-          /(function|class)/,
-          `$1 ${mod.export[0].name}`,
+          /(function|class)[^\(\{]*/,
+          `$1 ${mod.export[0].name} `,
         );
       } else {
         code.push("const");
@@ -119,7 +121,7 @@ function parseNamed(code) {
   const match = /^\{?\s*(\w+|\*)(\s*(as|\:)\s*(\w+))?\s*\}?/.exec(code);
 
   if (!match) {
-    throw new Error(`Error parsing the name "${code}"`);
+    throw new Error(`${red("Error parsing the name")} "${code}"`);
   }
 
   let [, name, , , as] = match;
@@ -188,7 +190,7 @@ function stringifyNamedCollection(names) {
 
 function replaceParsed(str, parsed, callback) {
   if (!parsed) {
-    console.error(`Error parsing ${str}`);
+    console.error(`${red("Error parsing")}:\n${str}`);
     return str;
   }
 

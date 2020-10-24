@@ -107,3 +107,17 @@ Deno.test(`name1 = require("module-name");`, () => {
     },
   );
 });
+
+Deno.test(`exports.name1 = function name2() {`, () => {
+  assertEquals(
+    parseExportCJS(`exports.name1 = function name2() {`),
+    {
+      export: [
+        {
+          name: "name1",
+        },
+      ],
+      value: "function name2() {",
+    },
+  );
+});
