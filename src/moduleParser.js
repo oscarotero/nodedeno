@@ -64,6 +64,11 @@ export function parseExportCJS(code) {
     return { export: [{ name: "*", as: name }], path: mod.path };
   }
 
+  // exports.name = name;
+  if (name === value.replace(";", "").trim()) {
+    return { export: [[{ name }]] };
+  }
+
   if (!name) {
     return { export: [], value };
   }

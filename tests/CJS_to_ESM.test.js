@@ -43,6 +43,7 @@ Deno.test("const name1 = require('module-name');", () => {
 
   assertEquals(stringify(parsed), expected);
 });
+
 Deno.test("const { name1, name2: alias } = require('module-name');", () => {
   const parsed = parseImportCJS(
     `const { name1, name2: alias } = require('module-name');`,
@@ -51,6 +52,7 @@ Deno.test("const { name1, name2: alias } = require('module-name');", () => {
 
   assertEquals(stringify(parsed), expected);
 });
+
 Deno.test("exports.name1 = function name2(arg) {", () => {
   const parsed = parseExportCJS(
     `exports.name1 = function name2(arg) {`,
@@ -59,11 +61,21 @@ Deno.test("exports.name1 = function name2(arg) {", () => {
 
   assertEquals(stringify(parsed), expected);
 });
+
 Deno.test("exports.name1 = require('module-name');", () => {
   const parsed = parseExportCJS(
     `exports.name1 = require('module-name');`,
   );
   const expected = `export * as name1 from "module-name"`;
+
+  assertEquals(stringify(parsed), expected);
+});
+
+Deno.test("exports.name1 = name1;", () => {
+  const parsed = parseExportCJS(
+    `exports.name1 = name1;`,
+  );
+  const expected = `export { name1 }`;
 
   assertEquals(stringify(parsed), expected);
 });

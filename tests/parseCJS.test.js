@@ -21,6 +21,21 @@ Deno.test("module.exports = foo", () => {
   );
 });
 
+Deno.test("module.exports.name = name", () => {
+  assertEquals(
+    parseExportCJS(`module.exports.name = name`),
+    {
+      export: [
+        [
+          {
+            name: "name",
+          },
+        ],
+      ],
+    },
+  );
+});
+
 Deno.test("module.exports   =  function () {", () => {
   assertEquals(
     parseExportCJS(`module.exports =   function () {`),
