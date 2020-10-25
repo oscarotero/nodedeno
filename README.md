@@ -117,10 +117,22 @@ This option allows to customize some modules resolution. Useful if you want to p
 ```js
 {
   modules: {
-    "path": "https://deno.land/std/path/mod.ts"
+    // Use a string to set a new path for a module name:
+    "url": "https://deno.land/std/url/mod.ts",
+
+    // Or an object with options
+    "mime": {
+      default: false,
+      path: "https://deno.land/std/mime/mod.ts",
+    }
   }
 }
 ```
+
+The available options for modules are:
+
+- `default`: Set `false` to indicate that the module does not export a default value, so any `const name = require("module-file")` will be converted to `import * as name from "module-file.js"` instead `import name from "module-file.js"`.
+- `path`: To change the path of the module.
 
 ### copy
 

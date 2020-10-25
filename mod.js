@@ -185,8 +185,27 @@ function resolveModule(mod, directory, file, options) {
   }
 
   const id = trimLeft(path);
+
   if (options.modules.has(id)) {
-    path = options.modules.get(id);
+    const modSettings = options.modules.get(id);
+
+    if (typeof modSettings === "string") {
+      path = modSettings;
+    } else {
+      if (modSettings.path) {
+        path = modSettings.path;
+      }
+
+      //Non default modules (import name => import * as name)
+      if (modSettings.default === false) {
+        const names = Array.isArray(mod.import) ? mod.import : mod.export;
+
+        if (!Array.isArray(names[0]) && names[0].name !== "*") {
+          names[0].as = names[0].name;
+          names[0].name = "*";
+        }
+      }
+    }
   }
 
   //Resolve modules
