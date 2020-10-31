@@ -25,6 +25,15 @@ export async function convert(options = {}) {
     options.input = [options.input];
   }
 
+  //Copy files
+  if (options.copy) {
+    for (const [from, to] of Object.entries(options.copy)) {
+      const dest = join(options.output, to);
+      await ensureDir(dirname(dest));
+      await copy(from, dest);
+    }
+  }
+
   //Read all src files
   const directory = new Map();
 
@@ -49,14 +58,6 @@ export async function convert(options = {}) {
     await ensureDir(dirname(path));
     await Deno.writeTextFile(path, code);
   }
-
-  if (options.copy) {
-    for (const [from, to] of Object.entries(options.copy)) {
-      const dest = join(options.output, to);
-      await ensureDir(dirname(dest));
-      await copy(from, dest);
-    }
-  }
 }
 
 function readDirectory(src, options, directory) {
@@ -69,12 +70,12 @@ function readDirectory(src, options, directory) {
       continue;
     }
 
-    if (!validExtensions.includes(extname(path))) {
+    if (entry.isDirectory) {
+      readDirectory(path, options, directory);
       continue;
     }
 
-    if (entry.isDirectory) {
-      readDirectory(path, options, directory);
+    if (!validExtensions.includes(extname(path))) {
       continue;
     }
 
@@ -155,6 +156,7 @@ export function convertCode(directory, file, options) {
   }
 
   code = code.replace(/process\.env\./g, "Deno.env.");
+  code = code.replace(/process\.cwd\(\)/g, "Deno.cwd()");
 
   //Convert modules
   code = replaceModules(
