@@ -3,7 +3,7 @@
 Script to convert Node libraries to Deno
 
 - Transform CJS to ESM
-- Transform TypeScript to JavaScript
+- Transform TypeScript to JavaScript (optionally)
 - Any dependency is replaced with `./deps.js`
 - Replace some Node global object like `process.env` or `__dirname` to Deno equivalents
 
@@ -34,20 +34,23 @@ import { convert } from "https://deno.land/x/nodedeno/mod.js"
 
 await convert({
   src: "node-library",
-  input: [ "lib" ]
+  input: [
+    "lib",
+    "main.js"
+  ],
   output: "deno-library",
   depsFiles: {
-    "lib": "lib/deps.js"
+    "": "deps.js"
   },
   copy: {
-    "my-deps-file.js": "lib/deps.js"
+    "my-deps-file.js": "deps.js"
   },
   ignoredFiles: [
     "ignored-file-1.js",
     "ignored-file-2.js",
   ],
   modules: {
-    "module-name": "./new-module.js"
+    "module-name": "new-module.js"
   },
   beforeConvert(src) {
     for (let [path, code] of src) {
@@ -83,7 +86,7 @@ An array with files and directories to load from the node package.
 
 ### output
 
-The folder destination of the Deno files
+The folder destination to save the Deno files
 
 ### depsFiles
 
@@ -99,7 +102,7 @@ will be converted to:
 import { path } from "./deps.js";
 ```
 
-Use this option to customize the dependencies file, for example:
+Use this option to customize the dependencies file, or assign different files for some directories. For example:
 
 ```js
 {
@@ -136,7 +139,7 @@ The available options for modules are:
 
 ### copy
 
-To copy files to the output without transform it. The object keys are the source files (relative to cwd) and the value is the destination (relative to `output`):
+To copy files to the output without transform it. The object keys are the source files (relative to `cwd`) and the value is the destination (relative to `output`):
 
 ```js
 {
