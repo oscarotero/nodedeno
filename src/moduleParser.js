@@ -4,15 +4,15 @@ export function replaceModules(code, callback) {
   return code
     .replace(
       /(^|\s)(module\.)?exports\W.*/g,
-      (str, start) => start + replaceParsed(str, parseExportCJS(str), callback),
+      (str, start) => start + replaceParsed(str, parseExportCJS(normalize(str)), callback),
     )
     .replace(
       /(^|\s)(export|import)\s+.*\s*from\s*.*/g,
-      (str, start) => start + replaceParsed(str, parseESM(str), callback),
+      (str, start) => start + replaceParsed(str, parseESM(normalize(str)), callback),
     )
     .replace(
-      /.*\s*require\(.*/g,
-      (str) => replaceParsed(str, parseImportCJS(str), callback),
+      /([\s\S]+?)?\s*require\(.*/g,
+      (str) => replaceParsed(str, parseImportCJS(normalize(str)), callback),
     );
 }
 
@@ -234,6 +234,10 @@ function stringifyNamedCollection(names) {
   return code.join(", ");
 }
 
+function normalize(str) {
+  return str.replace(/[\n\s\r]+/g, " ");
+}
+
 function replaceParsed(str, parsed, callback) {
   if (!parsed) {
     console.error(`${red("Error parsing")}:\n${str}`);
@@ -244,5 +248,5 @@ function replaceParsed(str, parsed, callback) {
     callback(parsed);
   }
 
-  return stringify(parsed);
+  return stringify(parsed) + "\n";
 }
