@@ -1,11 +1,11 @@
-import { copy, ensureDir } from "https://deno.land/std/fs/mod.ts";
+import { copy, ensureDir } from "https://deno.land/std@0.77.0/fs/mod.ts";
 import {
   basename,
   dirname,
   extname,
   join,
   relative,
-} from "https://deno.land/std/path/mod.ts";
+} from "https://deno.land/std@0.77.0/path/mod.ts";
 import { replaceModules } from "./src/moduleParser.js";
 
 const __dirname = `const __dirname = (() => {

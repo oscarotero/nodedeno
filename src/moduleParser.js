@@ -1,4 +1,4 @@
-import { red } from "https://deno.land/std/fmt/colors.ts";
+import { red } from "https://deno.land/std@0.77.0/fmt/colors.ts";
 
 export function replaceModules(code, callback) {
   return code
