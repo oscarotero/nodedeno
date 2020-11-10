@@ -129,12 +129,12 @@ export async function convertFiles(directory, options) {
 
   //Helpers
   const helpers = {
-    rename(from, to) {
+    rename(from, to, cb = (c) => c) {
       if (!directory.has(from)) {
         return;
       }
 
-      directory.set(to, directory.get(from));
+      directory.set(to, cb(directory.get(from)));
       directory.delete(from);
     },
 
