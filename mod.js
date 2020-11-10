@@ -127,9 +127,29 @@ export async function convertFiles(directory, options) {
     }
   }
 
+  //Helpers
+  const helpers = {
+    rename(from, to) {
+      if (!directory.has(from)) {
+        return;
+      }
+
+      directory.set(to, directory.get(from));
+      directory.delete(from);
+    },
+
+    replace(file, cb) {
+      if (!directory.has(file)) {
+        return;
+      }
+
+      directory.set(file, cb(directory.get(file)));
+    },
+  };
+
   //Convert code
   if (options.beforeConvert) {
-    options.beforeConvert(directory);
+    options.beforeConvert(directory, helpers);
   }
 
   for (const file of directory.keys()) {
@@ -137,7 +157,7 @@ export async function convertFiles(directory, options) {
   }
 
   if (options.afterConvert) {
-    options.afterConvert(directory);
+    options.afterConvert(directory, helpers);
   }
 }
 

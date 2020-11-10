@@ -4,11 +4,13 @@ export function replaceModules(code, callback) {
   return code
     .replace(
       /(^|\s)(module\.)?exports\W.*/g,
-      (str, start) => start + replaceParsed(str, parseExportCJS(normalize(str)), callback),
+      (str, start) =>
+        start + replaceParsed(str, parseExportCJS(normalize(str)), callback),
     )
     .replace(
       /(^|\s)(export|import)\s+.*\s*from\s*.*/g,
-      (str, start) => start + replaceParsed(str, parseESM(normalize(str)), callback),
+      (str, start) =>
+        start + replaceParsed(str, parseESM(normalize(str)), callback),
     )
     .replace(
       /([\s\S]+?)?\s*require\(.*/g,
