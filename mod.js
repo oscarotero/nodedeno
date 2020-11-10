@@ -145,6 +145,12 @@ export async function convertFiles(directory, options) {
 
       directory.set(file, cb(directory.get(file)));
     },
+
+    replaceAll(cb) {
+      for (const [file, content] of directory) {
+        directory.set(file, cb(content));
+      }
+    },
   };
 
   //Convert code
