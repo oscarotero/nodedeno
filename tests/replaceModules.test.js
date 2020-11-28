@@ -30,3 +30,23 @@ export default class Renderer {
 
   assertEquals(converted, expected);
 });
+
+Deno.test("Replace module test", () => {
+  const code = `
+import {browsers} from './browsers';
+import {browserVersions as versions} from './browserVersions';
+
+const agentsData = require('../../data/agents');
+`;
+  const expected = `
+import { browsers } from "./browsers"
+
+import { browserVersions as versions } from "./browserVersions"
+
+import agentsData from "../../data/agents"
+
+`;
+  const converted = replaceModules(code);
+
+  assertEquals(converted, expected);
+});

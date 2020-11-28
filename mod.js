@@ -1,4 +1,6 @@
 import { copy, ensureDir } from "https://deno.land/std@0.77.0/fs/mod.ts";
+import { red } from "https://deno.land/std@0.77.0/fmt/colors.ts";
+
 import {
   basename,
   dirname,
@@ -247,9 +249,8 @@ function resolveModule(mod, directory, file, options) {
     } else if (directory.has(`${path}/index.ts`)) {
       path = `${path}/index.ts`;
     } else {
-      throw new Error(
-        `Module ${path} cannot be resolved from the file ${file}`,
-      );
+      console.error(red(`Module "${path}" cannot be resolved from the file "${file}"`));
+      return;
     }
   }
 

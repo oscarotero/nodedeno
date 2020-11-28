@@ -13,7 +13,7 @@ export function replaceModules(code, callback) {
         start + replaceParsed(str, parseESM(normalize(str)), callback),
     )
     .replace(
-      /([\s\S]+?)?\s*require\(.*/g,
+      /(^|\s)((let|const|var)?\s*({[^}]+}|\S+)\s*=\s*)?require\(.*/g,
       (str) => replaceParsed(str, parseImportCJS(normalize(str)), callback),
     );
 }
