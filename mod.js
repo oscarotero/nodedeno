@@ -43,6 +43,10 @@ export async function convert(options = {}) {
     if (typeof path === "object") {
       for (const [from, to] of Object.entries(path)) {
         directory.set(to, Deno.readTextFileSync(join(options.src, from)));
+
+        if (!options.modules.has(from)) {
+          options.modules.set(from, to);
+        }
       }
     } else if (extname(path)) {
       directory.set(path, Deno.readTextFileSync(join(options.src, path)));
@@ -126,6 +130,8 @@ export async function convertFiles(directory, options) {
       code = `/// <reference types="./${
         basename(file, ".js")
       }.d.ts" />\n ${code}`;
+
+      directory.set(file, code);
     }
   }
 
@@ -199,7 +205,7 @@ export function convertCode(directory, file, options) {
 
 function resolveModule(mod, directory, file, options) {
   let path = mod.path;
-  const basedir = dirname(file);
+  const basedir = getBasedir(options.modules, file);
 
   if (path.startsWith(".")) {
     path = join(basedir, path);
@@ -215,9 +221,10 @@ function resolveModule(mod, directory, file, options) {
   }
 
   const id = trimLeft(path);
+  const modulePath = searchModule(options.modules, id);
 
-  if (options.modules.has(id)) {
-    const modSettings = options.modules.get(id);
+  if (modulePath) {
+    const modSettings = options.modules.get(modulePath);
 
     if (typeof modSettings === "string") {
       path = modSettings;
@@ -240,23 +247,53 @@ function resolveModule(mod, directory, file, options) {
 
   //Resolve modules
   if (!extname(path)) {
-    if (directory.has(`${path}.js`)) {
-      path = `${path}.js`;
-    } else if (directory.has(`${path}.ts`)) {
-      path = `${path}.ts`;
-    } else if (directory.has(`${path}/index.js`)) {
-      path = `${path}/index.js`;
-    } else if (directory.has(`${path}/index.ts`)) {
-      path = `${path}/index.ts`;
-    } else {
-      console.error(red(`Module "${path}" cannot be resolved from the file "${file}"`));
+    const found = searchModule(directory, path);
+
+    if (!found) {
+      console.error(
+        red(`Module "${path}" cannot be resolved from the file "${file}"`),
+      );
       return;
+    }
+
+    path = found;
+  }
+
+  path = relative(dirname(file), path);
+
+  mod.path = path.startsWith(".") ? path : `./${path}`;
+}
+
+function getBasedir(modules, file) {
+  for (const [key, value] of modules) {
+    if (value === file) {
+      return dirname(key);
     }
   }
 
-  path = relative(basedir, path);
+  return dirname(file);
+}
 
-  mod.path = path.startsWith(".") ? path : `./${path}`;
+function searchModule(modules, id) {
+  if (modules.has(id)) {
+    return id;
+  }
+
+  if (modules.has(`${id}.js`)) {
+    return `${id}.js`;
+  }
+
+  if (modules.has(`${id}.ts`)) {
+    return `${id}.ts`;
+  }
+
+  if (modules.has(`${id}/index.js`)) {
+    return `${id}/index.js`;
+  }
+
+  if (modules.has(`${id}/index.ts`)) {
+    return `${id}/index.ts`;
+  }
 }
 
 function getDepsFile(deps, dir, fallback = "deps.js") {
