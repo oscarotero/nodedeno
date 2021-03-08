@@ -200,6 +200,9 @@ export function convertCode(directory, file, options) {
     .replace(/["']use strict['"];?/, "")
     .trimStart();
 
+  //Remove multiple empty lines before imports
+  code = code.replaceAll(/([\n\r]+)import /g, "\nimport ");
+
   return code;
 }
 
