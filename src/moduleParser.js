@@ -14,7 +14,7 @@ export function replaceModules(code, callback) {
     )
     .replace(
       /(^|\s)((let|const|var)?\s*({[^}]+}|\S+)\s*=\s*)?require\(.*/g,
-      (str) => replaceParsed(str, parseImportCJS(normalize(str)), callback),
+      (str, start) => start + replaceParsed(str, parseImportCJS(normalize(str)), callback),
     );
 }
 
