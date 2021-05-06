@@ -212,7 +212,7 @@ function resolveModule(mod, directory, file, options) {
 
   if (path.startsWith(".")) {
     path = join(basedir, path);
-  } else {
+  } else if (!options.modules.has(path)) {
     path = getDepsFile(options.depsFiles, basedir);
 
     //If it's a dependency force named import
