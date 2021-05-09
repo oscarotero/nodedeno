@@ -189,7 +189,7 @@ export function convertCode(directory, file, options) {
     code = `${__dirname}\n\n${code}`;
   }
 
-  code = code.replace(/process\.env\./g, "Deno.env.");
+  code = code.replace(/process\.env\.(\w+)/g, (match, name) => `Deno.env.get("${name}")`);
   code = code.replace(/process\.cwd\(\)/g, "Deno.cwd()");
 
   //Convert modules
