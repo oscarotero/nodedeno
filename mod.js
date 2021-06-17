@@ -20,6 +20,7 @@ const validExtensions = [".js", ".ts", ".mjs"];
 
 export async function convert(options = {}) {
   options.ignoredFiles = new Set(options.ignoredFiles || []);
+  options.noConvert = new Set(options.noConvert || []);
   options.modules = new Map(Object.entries(options.modules || {}));
   options.depsFiles = new Map(Object.entries(options.depsFiles || {}));
 
@@ -166,8 +167,12 @@ export async function convertFiles(directory, options) {
     options.beforeConvert(directory, helpers);
   }
 
-  for (const file of directory.keys()) {
-    directory.set(file, convertCode(directory, file, options));
+  if (!options.noConvert.has("*")) {
+    for (const file of directory.keys()) {
+      if (!options.noConvert.has(file)) {
+        directory.set(file, convertCode(directory, file, options));
+      }
+    }
   }
 
   if (options.afterConvert) {

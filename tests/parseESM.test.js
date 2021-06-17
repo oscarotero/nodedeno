@@ -82,6 +82,25 @@ Deno.test("import { export1, export2 }", () => {
   );
 });
 
+Deno.test("import { export1, export2, }", () => {
+  assertEquals(
+    parseESM(`import { export1, export2, } from "./module-file.js";`),
+    {
+      import: [
+        [
+          {
+            name: "export1",
+          },
+          {
+            name: "export2",
+          },
+        ],
+      ],
+      path: "./module-file.js",
+    },
+  );
+});
+
 Deno.test("import { export1, export2 as alias2 }", () => {
   assertEquals(
     parseESM(

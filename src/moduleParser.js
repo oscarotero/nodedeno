@@ -179,7 +179,7 @@ function parseNamed(code) {
 
 function parseNamedCollection(code) {
   const names = [];
-  const pieces = code.split(",").map((name) => name.trim());
+  const pieces = code.split(",").map((name) => name.trim()).filter((name) => name);
   let destructuring = false;
 
   while (pieces.length) {
@@ -188,6 +188,11 @@ function parseNamedCollection(code) {
     if (name.startsWith("{")) {
       destructuring = [];
       names.push(destructuring);
+    }
+
+    if (name === "}") {
+      destructuring = false;
+      continue;
     }
 
     const parsedName = parseNamed(name);

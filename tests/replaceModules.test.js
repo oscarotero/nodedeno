@@ -15,7 +15,9 @@ const {
 module.exports = class Renderer {
 }
 `;
-  const expected = `import { defaults } from "./defaults.js"
+  const expected = `
+import { defaults } from "./defaults.js"
+
 import { cleanUrl, escape } from "./helpers.js"
 
 
@@ -42,6 +44,7 @@ const agentsData = require('../../data/agents');
 import { browsers } from "./browsers"
 
 import { browserVersions as versions } from "./browserVersions"
+
 
 import agentsData from "../../data/agents"
 
