@@ -14,7 +14,8 @@ export function replaceModules(code, callback) {
     )
     .replace(
       /(^|\s)((let|const|var)?\s*({[^}]+}|\S+)\s*=\s*)?require\(.*/g,
-      (str, start) => start + replaceParsed(str, parseImportCJS(normalize(str)), callback),
+      (str, start) =>
+        start + replaceParsed(str, parseImportCJS(normalize(str)), callback),
     );
 }
 
@@ -179,7 +180,9 @@ function parseNamed(code) {
 
 function parseNamedCollection(code) {
   const names = [];
-  const pieces = code.split(",").map((name) => name.trim()).filter((name) => name);
+  const pieces = code.split(",").map((name) => name.trim()).filter((name) =>
+    name
+  );
   let destructuring = false;
 
   while (pieces.length) {

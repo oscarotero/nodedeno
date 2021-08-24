@@ -5,7 +5,8 @@ Script to convert Node libraries to Deno
 - Transform CJS to ESM
 - Transform TypeScript to JavaScript (optionally)
 - Any dependency is replaced with `./deps.js`
-- Replace some Node global object like `process.env` or `__dirname` to Deno equivalents
+- Replace some Node global object like `process.env` or `__dirname` to Deno
+  equivalents
 
 ## Example:
 
@@ -23,7 +24,7 @@ Is converted to:
 import { dep } from "./deps.js";
 import otherModule from "./other-module.js";
 
-export default function foo() {};
+export default function foo() {}
 export const otherModule = function bar() {};
 ```
 
@@ -77,10 +78,11 @@ An array with files and directories to load from the node package.
 
 ```js
 {
-  input: [
+  input:
+  [
     "lib",
-    "index.js"
-  ]
+    "index.js",
+  ];
 }
 ```
 
@@ -90,7 +92,8 @@ The folder destination to save the Deno files
 
 ### depsFiles
 
-By default, all external dependencies will be replaced by `deps.js` module. For example:
+By default, all external dependencies will be replaced by `deps.js` module. For
+example:
 
 ```js
 const path = require("path");
@@ -102,7 +105,8 @@ will be converted to:
 import { path } from "./deps.js";
 ```
 
-Use this option to customize the dependencies file, or assign different files for some directories. For example:
+Use this option to customize the dependencies file, or assign different files
+for some directories. For example:
 
 ```js
 {
@@ -115,7 +119,8 @@ Use this option to customize the dependencies file, or assign different files fo
 
 ### modules
 
-This option allows to customize some modules resolution. Useful if you want to provide a different file for some modules instead using `deps.js`.
+This option allows to customize some modules resolution. Useful if you want to
+provide a different file for some modules instead using `deps.js`.
 
 ```js
 {
@@ -134,12 +139,17 @@ This option allows to customize some modules resolution. Useful if you want to p
 
 The available options for modules are:
 
-- `default`: Set `false` to indicate that the module does not export a default value, so any `const name = require("module-file")` will be converted to `import * as name from "module-file.js"` instead `import name from "module-file.js"`.
+- `default`: Set `false` to indicate that the module does not export a default
+  value, so any `const name = require("module-file")` will be converted to
+  `import * as name from "module-file.js"` instead
+  `import name from "module-file.js"`.
 - `path`: To change the path of the module.
 
 ### copy
 
-To copy files to the output without transform it. The object keys are the source files (relative to `cwd`) and the value is the destination (relative to `output`):
+To copy files to the output without transform it. The object keys are the source
+files (relative to `cwd`) and the value is the destination (relative to
+`output`):
 
 ```js
 {
@@ -151,7 +161,8 @@ To copy files to the output without transform it. The object keys are the source
 
 ### transpile
 
-Set `true` to converts all `.ts` code to `.js` and remove the reference types (`.d.ts`). This is useful if the typescript version fails in Deno.
+Set `true` to converts all `.ts` code to `.js` and remove the reference types
+(`.d.ts`). This is useful if the typescript version fails in Deno.
 
 ### ignoredFiles
 
@@ -159,7 +170,9 @@ An array of files that must be ignored (relative to the `src` folder)
 
 ### beforeConvert
 
-A callback that will be invoked before the file conversion. This is useful to perform some manual changes and substitutions. The first argument is a `Map` with all files that are going to be converted:
+A callback that will be invoked before the file conversion. This is useful to
+perform some manual changes and substitutions. The first argument is a `Map`
+with all files that are going to be converted:
 
 ```js
 {

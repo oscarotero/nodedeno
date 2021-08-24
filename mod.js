@@ -1,5 +1,5 @@
-import { copy, ensureDir } from "https://deno.land/std@0.77.0/fs/mod.ts";
-import { red } from "https://deno.land/std@0.77.0/fmt/colors.ts";
+import { copy, ensureDir } from "https://deno.land/std@0.106.0/fs/mod.ts";
+import { red } from "https://deno.land/std@0.106.0/fmt/colors.ts";
 
 import {
   basename,
@@ -7,7 +7,7 @@ import {
   extname,
   join,
   relative,
-} from "https://deno.land/std@0.77.0/path/mod.ts";
+} from "https://deno.land/std@0.106.0/path/mod.ts";
 import { replaceModules } from "./src/moduleParser.js";
 
 const __dirname = `const __dirname = (() => {
@@ -108,8 +108,11 @@ export async function convertFiles(directory, options) {
 
     //Transpile .ts => .js
     if (file.endsWith(".ts") && options.transpile) {
-      const result = await Deno.transpileOnly({
-        [file]: code,
+      const filename = `/${file}`;
+      const result = await Deno.emit(filename, {
+        sources: {
+          [filename]: code,
+        },
       });
 
       directory.delete(file);
@@ -194,7 +197,10 @@ export function convertCode(directory, file, options) {
     code = `${__dirname}\n\n${code}`;
   }
 
-  code = code.replace(/process\.env\.(\w+)/g, (match, name) => `Deno.env.get("${name}")`);
+  code = code.replace(
+    /process\.env\.(\w+)/g,
+    (match, name) => `Deno.env.get("${name}")`,
+  );
   code = code.replace(/process\.cwd\(\)/g, "Deno.cwd()");
 
   //Convert modules
@@ -202,7 +208,7 @@ export function convertCode(directory, file, options) {
     code,
     (mod) => mod.path ? resolveModule(mod, directory, file, options) : mod,
   )
-    .replace(/["']use strict['"];?/, "")
+    .replace(/^\s*["']use strict['"];?\s*$/, "")
     .trimStart();
 
   //Remove multiple empty lines before imports
