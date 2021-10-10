@@ -20,19 +20,21 @@ export function replaceModules(code, callback) {
 }
 
 export function parseESM(code) {
-  const matches = /(import|export)\s+((.*)\s*from\s*)?['"]([^'"]+)['"]/.exec(
-    code.replaceAll("\n", " "),
-  );
+  const matches =
+    /(import|export)(\s+type)?\s+((.*)\s*from\s*)?['"]([^'"]+)['"]/.exec(
+      code.replaceAll("\n", " "),
+    );
 
   if (!matches) {
     return;
   }
 
-  const [, type, , names, path] = matches;
+  const [, dir, type, , names, path] = matches;
 
   return {
     path,
-    [type]: names ? parseNamedCollection(names) : [],
+    type: !!type,
+    [dir]: names ? parseNamedCollection(names) : [],
   };
 }
 
@@ -125,6 +127,10 @@ export function stringify(mod) {
   if (mod.export) {
     code.push("export");
 
+    if (mod.type) {
+      code.push("type");
+    }
+
     if (mod.export.length === 1 && mod.value) {
       if (mod.value.match(/(function\W|class\W)/)) {
         mod.value = mod.value.replace(
@@ -149,6 +155,10 @@ export function stringify(mod) {
     }
   } else if (mod.import) {
     code.push("import");
+
+    if (mod.type) {
+      code.push("type");
+    }
 
     if (mod.import.length) {
       code.push(stringifyNamedCollection(mod.import));

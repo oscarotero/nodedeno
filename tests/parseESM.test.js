@@ -11,6 +11,7 @@ Deno.test("import defaultExport", () => {
         },
       ],
       path: "./module-file.js",
+      type: false,
     },
   );
 });
@@ -26,6 +27,7 @@ Deno.test("import * as name", () => {
         },
       ],
       path: "./module-file.js",
+      type: false,
     },
   );
 });
@@ -42,6 +44,24 @@ Deno.test("import { export1 }", () => {
         ],
       ],
       path: "./module-file.js",
+      type: false,
+    },
+  );
+});
+
+Deno.test("import type { export1 }", () => {
+  assertEquals(
+    parseESM(`import type {\nexport1\n} from "./module-file.js";`),
+    {
+      import: [
+        [
+          {
+            name: "export1",
+          },
+        ],
+      ],
+      path: "./module-file.js",
+      type: true,
     },
   );
 });
@@ -59,6 +79,7 @@ Deno.test("import { export1 as alias1 }", () => {
         ],
       ],
       path: "./module-file.js",
+      type: false,
     },
   );
 });
@@ -78,6 +99,7 @@ Deno.test("import { export1, export2 }", () => {
         ],
       ],
       path: "./module-file.js",
+      type: false,
     },
   );
 });
@@ -97,6 +119,7 @@ Deno.test("import { export1, export2, }", () => {
         ],
       ],
       path: "./module-file.js",
+      type: false,
     },
   );
 });
@@ -119,6 +142,7 @@ Deno.test("import { export1, export2 as alias2 }", () => {
         ],
       ],
       path: "./module-file.js",
+      type: false,
     },
   );
 });
@@ -129,6 +153,7 @@ Deno.test("import 'path'", () => {
     {
       import: [],
       path: "./module-file.js",
+      type: false,
     },
   );
 });
@@ -150,6 +175,7 @@ Deno.test("import defaultExport, { export1 }", () => {
         ],
       ],
       path: "./module-file.js",
+      type: false,
     },
   );
 });
@@ -170,6 +196,7 @@ Deno.test("import defaultExport, * as name", () => {
         },
       ],
       path: "./module-file.js",
+      type: false,
     },
   );
 });
@@ -186,6 +213,7 @@ Deno.test("export *", () => {
         },
       ],
       path: "./module-file.js",
+      type: false,
     },
   );
 });
@@ -203,6 +231,7 @@ Deno.test("export * as name1", () => {
         },
       ],
       path: "./module-file.js",
+      type: false,
     },
   );
 });
@@ -224,6 +253,29 @@ Deno.test("export { name1, name2 }", () => {
         ],
       ],
       path: "./module-file.js",
+      type: false,
+    },
+  );
+});
+
+Deno.test("export type { name1, name2 }", () => {
+  assertEquals(
+    parseESM(
+      `export type { name1, name2 } from "./module-file.js";`,
+    ),
+    {
+      export: [
+        [
+          {
+            name: "name1",
+          },
+          {
+            name: "name2",
+          },
+        ],
+      ],
+      path: "./module-file.js",
+      type: true,
     },
   );
 });
@@ -247,6 +299,7 @@ Deno.test("export { name1 as alias1, name2 as alias2 }", () => {
         ],
       ],
       path: "./module-file.js",
+      type: false,
     },
   );
 });
@@ -265,6 +318,7 @@ Deno.test("export { default }", () => {
         ],
       ],
       path: "./module-file.js",
+      type: false,
     },
   );
 });

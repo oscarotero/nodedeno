@@ -14,3 +14,10 @@ Deno.test(`import "./filename.js"`, () => {
 
   assertEquals(stringify(parsed), expected);
 });
+
+Deno.test(`import type { foo } "./filename.js"`, () => {
+  const parsed = parseESM(`import type { foo } from "./filename.js"`);
+  const expected = `import type { foo } from "./filename.js"`;
+
+  assertEquals(stringify(parsed), expected);
+});
