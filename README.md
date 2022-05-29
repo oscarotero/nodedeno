@@ -46,6 +46,9 @@ await convert({
   copy: {
     "my-deps-file.js": "deps.js"
   },
+  download: {
+    "https://example.com/file.js": "deps/file.js",
+  },
   ignoredFiles: [
     "ignored-file-1.js",
     "ignored-file-2.js",
@@ -155,6 +158,20 @@ files (relative to `cwd`) and the value is the destination (relative to
 {
   copy: {
     "my-dependencies.js": "deps.js"
+  }
+}
+```
+
+### download
+
+It's like `copy` but download the file from a url. Useful to include some
+external dependencies in the repository in order to avoid possible networks
+errors.
+
+```js
+{
+  download: {
+    "https://esm.sh/v83/caniuse-lite@1.0.30001335/es2022/data/features/border-radius.js": "features/border-radius.js"
   }
 }
 ```
