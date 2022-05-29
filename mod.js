@@ -37,6 +37,20 @@ export async function convert(options = {}) {
     }
   }
 
+  //Downloads files
+  if (options.download) {
+    await Promise.all(
+      Object.entries(options.download).map(async ([from, to]) => {
+        const dest = join(options.output, to);
+        await ensureDir(dirname(dest));
+        const response = await fetch(from);
+        const blob = await response.blob();
+        const content = new Uint8Array(await blob.arrayBuffer());
+        await Deno.writeFile(dest, content);
+      }),
+    );
+  }
+
   //Read all src files
   const directory = new Map();
 
