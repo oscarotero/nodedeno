@@ -60,7 +60,7 @@ await convert({
     for (let [path, code] of src) {
       //path and code of all files
     }
-  }
+  },
   afterConvert(src) {
     for (let [path, code] of src) {
       //path and code of all files
